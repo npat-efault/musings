@@ -1,7 +1,4 @@
-musings
-=======
-
-Code from [npat's musings](https://github.com/npat-efault/musings/wiki)
+# Code from [npat's musings](https://github.com/npat-efault/musings/wiki)
 
 
 
