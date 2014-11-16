@@ -1,63 +1,64 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"time"
 )
 
+// Consumer1 is a packet consumer that receives packets from a
+// channel, consumes them at a constant rate, and reports its
+// availability on a second channel.
 type Consumer2 struct {
 	sel   int
 	in    <-chan Packet
 	avail chan<- int
 	delay time.Duration
-	quit  chan struct{}
+	end   chan int
 }
 
+// NewConsumer2 creates and returns a new consumer that receives and
+// consumes packets from channel "in", at a constant rate of one
+// packet every "delay". It accepts only packets with selectors equal
+// to "sel". It reports its availability (ready to receive next
+// packet) by emiting its selector on channel "avail". The consumer
+// stops when when its input channel is closed.
 func NewConsumer2(sel int, in <-chan Packet, avail chan<- int,
 	delay time.Duration) *Consumer2 {
 
 	c := &Consumer2{sel: sel, in: in, avail: avail, delay: delay}
-	c.quit = make(chan struct{})
+	c.end = make(chan int)
 	go c.run()
 	return c
 }
 
+// run runs as the consumer's goroutine.
 func (c *Consumer2) run() {
-	var av chan<- int
-	var in <-chan Packet
-	var tx <-chan time.Time
+	var npck int
 
 	// Initially, report availability.
-	av, in, tx = c.avail, nil, nil
-	for {
-		select {
-		case av <- c.sel:
-			// Get next packet.
-			av, in, tx = nil, c.in, nil
-		case pck := <-in:
-			if pck.sel != c.sel {
-				// Drop packet & report availability.
-				fmt.Printf("C%d: %03d/%d: Bad selector!\n",
-					c.sel, pck.id, pck.sel)
-				av, in, tx = c.avail, nil, nil
-			} else {
-				// Accept packet, delay for processing.
-				fmt.Printf("C%d: %03d/%d\n",
-					c.sel, pck.id, pck.sel)
-				av, in, tx = nil, nil, time.After(c.delay)
-			}
-		case <-tx:
-			// Report availability,
-			av, in, tx = c.avail, nil, nil
-		case <-c.quit:
-			fmt.Printf("Stopped Consumer2:%d\n", c.sel)
-			return
+	c.avail <- c.sel
+	for pck := range c.in {
+		npck++
+		if pck.sel != c.sel {
+			// Drop packet, report availability.
+			log.Printf("C%d: %03d/%d: Bad selector!\n",
+				c.sel, pck.id, pck.sel)
+			c.avail <- c.sel
+			continue
 		}
+		// Delay for processing.
+		<-time.After(c.delay)
+		log.Printf("C%d: %03d/%d\n", c.sel, pck.id, pck.sel)
+		// Report availability
+		c.avail <- c.sel
 	}
+	c.end <- npck
+	close(c.end)
 }
 
-func (c *Consumer2) Stop() {
-	c.quit <- struct{}{}
-	// Prohibit multiple Stop calls
-	close(c.quit)
+// Wait waits for the consumer to end and returns the total number of
+// packets received by it (either consumed or dropped due to bad
+// selectors).
+func (c *Consumer2) Wait() int {
+	return <-c.end
 }
