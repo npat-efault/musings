@@ -1,3 +1,5 @@
 /demux-go/demux
 /demux-go/demux-go
 *~
+/elastic/elastic.test
+/elastic/cpu.out
