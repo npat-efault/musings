@@ -49,8 +49,8 @@ func NewElasticT() ElasticT {
 // NewElasticT1 creates and returns a new elastic channel, using the
 // specified shrink mode.
 func NewElasticT1(mode ShrinkMode) ElasticT {
-	cin := make(chan T, SendBuffer)
-	cout := make(chan T, ReceiveBuffer)
+	cin := make(chan T, sendBuffer)
+	cout := make(chan T, receiveBuffer)
 	e := ElasticT{S: cin, R: cout}
 	go elasticRun1(mode, cout, cin)
 	return e
