@@ -5,7 +5,7 @@
 
 // Package elastic demonstrates a simple implementation of elastic
 // (growable) buffers for channels. See:
-// https://github.com/npat-efault/musings/wiki/Elastic-channels.rest
+// https://github.com/npat-efault/musings/wiki/Elastic-channels
 package elastic
 
 // T is the element-type for the elastic channel.
